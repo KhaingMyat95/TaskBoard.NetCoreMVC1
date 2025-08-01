@@ -1,0 +1,42 @@
+﻿@model EmpTaskModel
+
+@{
+    Layout = null;
+}
+
+<form id="UpdateTaskStatusForm" method="post" asp-action="UpdateStatus">
+    <input type="hidden" asp-for="TaskId" />
+    <input type="hidden" asp-for="EmployeeId" />
+
+    @*Task*@
+    <div class="form-group">
+        <label asp-for="TaskName"></label>
+        <input asp-for="TaskName" class="form-control disable-control" readonly>
+    </div>
+    @*Task*@
+    <div style="height:20px;"></div>
+    @*Remark*@
+    <div class="form-group">
+        <label asp-for="Remark"></label>
+        <input asp-for="Remark" class="form-control disable-control" rows="3" style="height: 67px;" readonly>
+    </div>
+    @*Remark*@
+    <div style="height:20px;"></div>
+
+    @*Status*@
+    <label asp-for="StatusString"></label><br />
+        <div class="btn-group" role="group" aria-label="Current Status">
+            <input type="radio" class="btn-check" name="Status" id="btnradio1" autocomplete="off" checked="" value="1">
+            <label class="btn btn-outline-success" for="btnradio1">In Progress</label>
+            <input type="radio" class="btn-check" name="Status" id="btnradio2" autocomplete="off" value="2">
+            <label class="btn btn-outline-info" for="btnradio2">Completed</label>
+        </div>
+    @*Status*@
+
+    <div style="height:20px;"></div>
+    <div class="d-flex justify-content-end">
+        <button type="submit" class="btn btn-primary">Update</button>
+        <span style="width:20px;"></span>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+    </div>
+</form>

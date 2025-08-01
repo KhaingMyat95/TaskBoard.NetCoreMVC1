@@ -1,0 +1,10 @@
+Project Name = TaskBoard.NetCoreMVC
+Application type = ASP.NET Core MVC
+Target Framework = .Net 6
+DataBase Engine = SQL Server
+DataBase Authentication = SQL Server Authentication
+
+Login User for testing
+Code = U0001
+Password = 12345
+

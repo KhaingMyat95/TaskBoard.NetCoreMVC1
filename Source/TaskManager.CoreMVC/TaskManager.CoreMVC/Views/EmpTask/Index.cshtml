@@ -1,0 +1,343 @@
+﻿@using TaskManager.CoreMVC.Enums
+@inject Microsoft.AspNetCore.Http.IHttpContextAccessor HttpContextAccessor
+@model IEnumerable<EmpTaskModel>
+
+@{
+    ViewData["Title"] = "Employee Task";
+    ViewData["Admin"] = @HttpContextAccessor.HttpContext.Session.GetString("Admin");
+    string[] statusColor = new string[] { "primary", "success", "info", "secondary" };
+}
+
+<style>
+    #emptasklist .action-column {
+      padding-left:24px;
+    }
+
+    #employeeSelectBox {
+        max-width: 300px;
+    }
+
+    #statusSelectBox {
+        max-width: 130px;
+    }
+
+    #emptasklist_filter {
+        display: flex;
+        justify-content: space-between;
+    }
+
+    #emptasklist_length {
+        float: left;
+        padding-bottom: 5px;
+    }
+</style>
+
+<partial name="_Notification" />
+
+<div class="container pt-2">
+    <div class="row">
+        <div class="col-6">
+            <h2 class="text-primary">Employee Tasks</h2>
+        </div>
+        <div class="col-6 text-end">
+        </div>
+    </div>
+    <div class="row" style="align-items:center;">
+        <div class="col-lg-4 col-md-4 col-sm-12">
+            <div class="form-group">
+                <label>Employee</label>
+                <select id="employeeSelectBox" class="form-select mb-2" aria-label="Select Employee">
+                    <option selected>All</option>
+                </select>
+            </div>
+        </div>
+        <div class="col-lg-4 col-md-4 col-sm-12">
+            <div class="form-group">
+                <label>Task Status</label>
+                <select id="statusSelectBox" class="form-select mb-2" aria-label="Select Task Status">
+                    <option selected>All</option>
+                </select>
+            </div>
+        </div>
+        <div class="col-lg-4 col-md-4 col-sm-12 text-end">
+            <a onclick="showInPopup('@Url.Action("CreateOrEditTask", "EmpTask", new { taskId = "" }, Context.Request.Scheme)', 'Assign New Task')" class="btn btn-primary">
+                <i class="bi bi-plus-square"></i> &nbsp; Assign New Task
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <table id="emptasklist" class="table table-striped">
+            <thead>
+                <tr>
+                    <th style="width:14vw;">
+                    Action
+                    </th>
+                    <th>
+                        @Html.DisplayNameFor(model => model.StatusString)
+                    </th>
+                    <th>
+                        @Html.DisplayNameFor(model => model.EmployeeCode)
+                    </th>
+                    <th>
+                        @Html.DisplayNameFor(model => model.EmployeeName)
+                    </th>
+                    <th>
+                        @Html.DisplayNameFor(model => model.TaskName)
+                    </th>
+                    <th>
+                        @Html.DisplayNameFor(model => model.Remark)
+                    </th>
+                    <th>
+                        @Html.DisplayNameFor(model => model.CancelReason)
+                    </th>
+                    <th>
+                        @Html.DisplayNameFor(model => model.IsPrority)
+                    </th>
+                    <th style="width:10vw;">
+                        @Html.DisplayNameFor(model => model.AssignDate)
+                    </th>
+                    <th style="width:10vw;">
+                        @Html.DisplayNameFor(model => model.EstimatedEndDate)
+                    </th>
+                    <th style="width:10vw;">
+                        @Html.DisplayNameFor(model => model.ActualEndDate)
+                    </th>
+                    <th>
+                        @Html.DisplayNameFor(model => model.AssignEmployeeName)
+                    </th>
+                    <th style="width:10vw;">
+                        @Html.DisplayNameFor(model => model.UpdateDate)
+                    </th>
+                    <th>
+                        @Html.DisplayNameFor(model => model.UpdateEmployeeName)
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+@section Scripts{
+    <script type="text/javascript">
+        var selectedEmpCode;
+        var selectedStatus;
+        var empTaskTable;
+        var EmpTaskStatus = {
+            Assign: 0,
+            Processing: 1,
+            Completed: 2,
+            Cancelled: 3
+        };
+
+        $(document).ready(function () {
+            var statusColor = ["primary", "success", "info", "secondary"];
+            var statusString = ["Assigned", "In Progress", "Completed", "Cancelled"];
+
+            empTaskTable = $('#emptasklist').DataTable({
+                "fnInitComplete": function (oSettings, json) {
+                    $('#emptasklist_filter').append('<button type="button" onclick="RefreshTable()" class="btn btn-secondary" style="width:100px;padding:2px"><i class="bi bi-arrow-clockwise"></i>Refresh</button>');
+                },
+                "processing": true,
+                "serverSide": true,
+                "searchable": true,
+                "ajax": {
+                    "url": "@Url.Action("GetEmpTasks", "EmpTask")",
+                    "type": "POST",
+                    "data": function(d){
+                        d.empCode = selectedEmpCode;
+                        d.taskStatus = selectedStatus;
+                    }
+                },
+                "language": {
+                    "emptyTable": "No record found.",
+                    "processing":
+                        '<i class="fa fa-spinner fa-spin fa-3x fa-fw" style="color:#2a2b2b;"></i><span class="sr-only">Loading...</span> '
+                },
+                "autoWidth": true,
+                "columns": [
+                    {
+                        "data": "taskId",
+                        "width": '120px',
+                        "orderable": false,
+                        "className": "action-column",
+                        "render": function (data, type, row) {
+                            var action = '';
+
+                            action += `<a onclick="showInPopup('@Url.Action("CreateOrEditTask", "EmpTask", new { taskId = "__taskId__" }, Context.Request.Scheme)', 'Edit Task')" class="btn btn-info">
+                                <i class="bi bi-pencil-fill" > </i>
+                                </a>`.replace("__taskId__", data);
+
+                            if (row.status == EmpTaskStatus.Assign) 
+                            {
+                                action += `<a onclick="showInPopup('@Url.Action("DeleteTask", "EmpTask", new {id = "__taskId__" }, Context.Request.Scheme)', 'Confirm Delete Task')" class="btn btn-warning" style="margin-left:24px;">
+                                    <i class="bi bi-trash-fill"></i>
+                                    </a>`.replace("__taskId__", data);
+                            }
+                            else if (row.status != EmpTaskStatus.Cancelled && row.status != EmpTaskStatus.Completed) 
+                            {
+                                action += `<a onclick="showInPopup('@Url.Action("CancelTask", "EmpTask", new {id = "__taskId__" }, Context.Request.Scheme)', 'Confirm Cancel Task')" class="btn btn-secondary" style="margin-left:24px;">
+                                    <i class="bi bi-x-square-fill" > </i>
+                                    </a>`.replace("__taskId__", data);
+                                
+                            }
+
+                            return action;
+                        }
+                    },
+                    {
+                        "data": "status",
+                        "searchable": true,
+                        "render": function (data) {
+                            return `<span class="badge bg-${statusColor[data]}">${statusString[data]}</span>`;
+                        }
+                    },
+                    {
+                        "data": "employeeCode",
+                        "searchable": true,
+                        "width": '100px'
+                    },
+                    {
+                        "data": "employeeName",
+                        "searchable": true,
+                        "width": '150px'
+                    },
+                    {
+                        "data": "taskName",
+                        "searchable": true,
+                        "width": '200px'
+                    },
+                    {
+                        "data": "remark",
+                        "searchable": true,
+                        "width": '200px'
+                    },
+                    {
+                        "data": "cancelReason",
+                        "searchable": true,
+                        "width": '150px'
+                    },
+                    {
+                        "data": "isPrority",
+                        "searchable": true,
+                        "render": function (data) {
+                            if (data == true) {
+                                return '<span>Yes</span>'
+                            }
+                            else {
+                                return '<span>No </span>'
+                            }
+                        }
+                    },
+                    {
+                        "data": "assignDate",
+                        "searchable": true,
+                        "width": '120px'
+                    },
+                    {
+                        "data": "estimatedEndDate",
+                        "searchable": true,
+                        "width": '120px'
+                    },
+                    {
+                        "data": "actualEndDate",
+                        "searchable": true,
+                        "width": '120px'
+                    },
+                    {
+                        "data": "assignEmployeeName",
+                        "searchable": true
+                    },
+                    {
+                        "data": "updateDate",
+                        "searchable": true,
+                        "width": '120px'
+                    },
+                    {
+                        "data": "updateEmployeeName",
+                        "searchable": true
+                    },
+                ],
+                "responsive": true,
+                "scrollX": true,
+                "scrollY": '60vh',
+                "scrollCollapse": true,
+                "error": function (xhr, error, thrown) {
+                    toastr.error("An error occurred while loading the data: " + error);
+                }
+            });
+
+            LoadEmployeeSelectBox();
+            LoadTaskStatusSelectBox();
+        });
+
+        function LoadEmployeeSelectBox() {
+            $.ajax({
+                url: "/EmpTask/GetEmployeeSelectBoxModel",
+                type: "GET",
+                success: function (response) {
+                    if (response.length > 0) {
+                        $('#employeeSelectBox').html('');
+                        var options = '';
+                        options += '<option value="all">All</option>';
+                        for (var i = 0; i < response.length; i++) {
+                            options += '<option value="' + response[i].employeeCode + '">' + response[i].displayName + '</option>';
+                        }
+                        $('#employeeSelectBox').append(options);
+                    }
+                },
+                error: function (request, status, error) {
+                    toastr.error(request.responseText);
+                }
+            });
+        }
+
+        $('#employeeSelectBox').on("change", function(){
+            selectedEmpCode = $('#employeeSelectBox').val();
+            RefreshTable();
+        });
+
+        function LoadTaskStatusSelectBox() {
+            $.ajax({
+                url: "/EmpTask/GetTaskStatusSelectBoxModel",
+                type: "GET",
+                success: function (response) {
+                    if (response.length > 0) {
+                        $('#statusSelectBox').html('');
+                        var options = '';
+                        options += '<option value="all">All</option>';
+                        for (var i = 0; i < response.length; i++) {
+                            options += '<option value="' + response[i].status + '">' + response[i].displayName + '</option>';
+                        }
+                        $('#statusSelectBox').append(options);
+                    }
+                },
+                error: function (request, status, error) {
+                    toastr.error(request.responseText);
+                }
+            });
+        }
+
+        $('#statusSelectBox').on("change", function () {
+            selectedStatus = $('#statusSelectBox').val();
+            RefreshTable();
+        });
+
+        function Search() {
+            var searchBox = document.getElementById("searchBox");
+            var data = searchBox.value;
+            window.location.href = '@Url.Action("GetEmployeeTaskModal", "EmpTask")?empCode=' + data;
+        }
+
+        function RefreshTable() {
+            empTaskTable.ajax.reload();
+        }
+
+    </script>
+}
+
+
+

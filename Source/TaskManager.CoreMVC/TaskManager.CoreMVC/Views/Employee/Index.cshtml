@@ -1,0 +1,151 @@
+﻿@inject Microsoft.AspNetCore.Http.IHttpContextAccessor HttpContextAccessor
+@model IEnumerable<EmployeeModel>
+
+@{
+    ViewData["Title"] = "Employee Page";
+    ViewData["Admin"] = @HttpContextAccessor.HttpContext.Session.GetString("Admin");
+}
+<partial name="_Notification" />
+<style>
+    #employeelist .action-column {
+        text-align: center;
+    }
+
+    #employeelist_filter {
+        display: flex;
+        justify-content: space-between;
+    }
+
+    #employeelist_length {
+        float: left;
+        padding-bottom: 5px;
+    }
+</style>
+
+<div class="container pt-2">
+    <div class="row">
+        <div class="col-6">
+            <h2 class="text-primary">Employees</h2>
+        </div>
+        <div class="col-6 text-end">
+            <a onclick="showInPopup('@Url.Action("CreateOrEdit", "Employee", null, Context.Request.Scheme)', 'Add New Employee')" class="btn btn-primary">
+                <i class="bi bi-plus-square"></i> &nbsp; Add New Employee
+            </a>
+        </div>
+    </div>
+
+    <table id="employeelist" class="table table-striped" style="width:100%">
+        <thead>
+            <tr>
+                <th style="width:200px;">
+                    Action
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.EmployeeCode)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.Name)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.IsAdmin)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.RegistDate)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.UpdateDate)
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
+
+@section Scripts{
+    <script type="text/javascript">
+        var empTable;
+        $(document).ready(function(){
+            empTable = $('#employeelist').DataTable({
+                "fnInitComplete": function (oSettings, json) {
+                    $('#employeelist_filter').append('<button type="button" onclick="RefreshTable()" class="btn btn-secondary" style="width:100px;padding:2px"><i class="bi bi-arrow-clockwise"></i>Refresh</button>');
+                },
+                "processing": true,
+                "serverSide": true,
+                "searchable": true,
+                "ajax": {
+                    "url": "@Url.Action("GetEmployees", "Employee")",
+                    "type": "POST"
+                },
+                "language": {
+                    "emptyTable": "No record found.",
+                    "processing":
+                        '<i class="fa fa-spinner fa-spin fa-3x fa-fw" style="color:#2a2b2b;"></i><span class="sr-only">Loading...</span> '
+                },
+                "autoWidth": true,
+                "columns": [
+                    {
+                        "data": "id",
+                        "width": '200px',
+                        "orderable": false,
+                        "className": "action-column",
+                        "render": function (data, type, row) {
+                            var action = '';
+                            action += `<a onclick="showInPopup('@Url.Action("CreateOrEdit", "Employee", new {id = "__EmpId__" }, Context.Request.Scheme)', 'Edit Employee')" class="btn btn-info">
+                                    <i class="bi bi-pencil-fill"></i>
+                                    </a>`.replace("__EmpId__", data);
+                            action += `<a onclick="showInPopup('@Url.Action("Delete", "Employee", new {id = "__EmpId__" }, Context.Request.Scheme)', 'Confirm Delete Employee')" class="btn btn-warning" style="margin-left:24px;">
+                                    <i class="bi bi-trash-fill"></i>
+                                    </a>`.replace("__EmpId__", data);
+                            action += `<a onclick="showInPopup('@Url.Action("ChangePassword", "Employee", new {id = "__EmpId__" }, Context.Request.Scheme)', 'Change Password')" class="btn btn-success" style="margin-left:24px;">
+                                    <i class="bi bi-key-fill"></i>
+                                    </a>`.replace("__EmpId__", data);
+
+                            return action;
+                        }
+                    },
+                    {
+                        "data": "employeeCode",
+                        "searchable": true
+                    },
+                    {
+                        "data": "name",
+                        "searchable": true,
+                        "width": '200px'
+                    },
+                    {
+                        "data": "isAdmin",
+                        "searchable": true,
+                        "render": function (data) {
+                            if (data == true) {
+                                return '<span>Yes</span>'
+                            }
+                            else {
+                                return '<span>No </span>'
+                            }
+                        }
+                    },
+                    {
+                        "data": "registDate",
+                        "searchable": true
+                    },
+                    {
+                        "data": "updateDate",
+                        "searchable": true
+                    }
+                ],
+                "responsive": true,
+                "scrollX": true,
+                "scrollY": '60vh',
+                "scrollCollapse": true,
+                "error": function (xhr, error, thrown) {
+                    toastr.error("An error occurred while loading the data: " + error);
+                }
+            });
+        });
+
+        function RefreshTable() {
+            empTable.ajax.reload();
+        }
+    </script>
+}

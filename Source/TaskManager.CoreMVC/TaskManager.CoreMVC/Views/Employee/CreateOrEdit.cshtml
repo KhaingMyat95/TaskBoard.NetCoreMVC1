@@ -1,0 +1,54 @@
+﻿@model EmployeeModel
+
+@{
+    Layout = null;
+}
+
+<form id="CreateEditEmpForm" method="post" asp-action="CreateOrEdit">
+    <input type="hidden" asp-for="Id" />
+
+    @*Employee Code Input*@
+    <div class="form-group">
+        <label asp-for="EmployeeCode"></label>
+        <input asp-for="EmployeeCode" readonly="" class="form-control disable-control">
+        <span asp-validation-for="EmployeeCode" class="text-danger"></span>
+    </div>
+    @*Employee Code*@
+    <div style="height:20px;"></div>
+    @*Name*@
+    <div class="form-group">
+        <label asp-for="Name"></label>
+        <input asp-for="Name" class="form-control">
+        <span asp-validation-for="Name" class="text-danger"></span>
+    </div>
+    @*Name Input*@
+    <div style="height:20px;"></div>
+    @*Admin*@
+    <div class="form-group">
+        <div class="form-check form-switch">
+            <input asp-for="IsAdmin" class="form-check-input" type="checkbox">
+            <label class="form-check-label" asp-for="IsAdmin"></label>
+        </div>
+    </div>
+    @*Admin*@
+
+    @if (string.IsNullOrEmpty(Model.Id))
+    {
+        <div style="height:20px;"></div>
+        @*Password*@
+        <div class="form-group">
+            <label asp-for="Password"></label>
+            <input type="password" asp-for="Password" class="form-control" placeholder="Enter Password" id="pwd">
+            <span asp-validation-for="Password" class="text-danger"></span>
+        </div>
+        @*Password*@
+    }
+
+    <div style="height:20px;"></div>
+    <div class="d-flex justify-content-end">
+        <button type="submit" class="btn btn-primary" onclick="Submit()">Submit</button>
+        <span style="width:20px;"></span>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+    </div>
+</form>
+<partial name="_ValidationScriptsPartial"></partial>

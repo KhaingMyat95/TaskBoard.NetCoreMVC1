@@ -1,0 +1,164 @@
+﻿@{
+    ViewData["Title"] = "Login Page";
+    Layout = "_LoginLayout";
+}
+@model LoginModel
+
+<style>
+    .login-page {
+        background-image: linear-gradient(to right, rgba(255,0,0,0), rgb(159 65 65));
+        font-family: fangsong;
+    }
+
+    .app-name {
+        text-align: center;
+        font-weight: bold;
+        color: #b58900;
+    }
+</style>
+
+<section class="vh-100 login-page">
+    <div class="container-fluid d-flex flex-column justify-content-between">
+        <div class="row align-items-center" style="height:25vh;">
+            <h2 class="app-name">Task Board</h2>
+        </div>
+        <div class="row" style="height:65vh;">
+            <div class="col-sm-4"></div>
+            <div class="col-sm-4" style="padding:24px;">
+                <div class="card" style="padding:24px;">
+                    <div class="d-flex justify-content-center">
+                        <h3>ACCOUNT LOGIN</h3>
+                    </div>
+                    <div class="card-body">
+                        <form id="loginForm" novalidate class="needs-validation" asp-action="LogIn">
+
+                            @*Employee Code Input*@
+                            <div class="form-group">
+                                <label asp-for="EmployeeCode"></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-person-fill"></i></span>
+                                    <input asp-for="EmployeeCode" class="form-control" placeholder="Enter Employee Code" id="code">
+                                </div>
+                                <span asp-validation-for="EmployeeCode" class="text-danger"></span>
+                            </div>
+                            @*End of Employee Code Input*@
+
+                            <div style="height:20px;"></div>
+
+                            @*Password Input*@
+                            <div class="form-group">
+                                <label asp-for="Password"></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
+                                    <input type="password" asp-for="Password" class="form-control" placeholder="Enter Password" id="pwd">
+                                    <span class="input-group-text" onclick="ShowHidePassword()" id="eyeicon">
+                                        <i class="bi bi-eye-slash-fill"></i>
+                                    </span>
+                                </div>
+                                <span asp-validation-for="Password" class="text-danger"></span>
+                            </div>
+                            @*End of Password Input*@
+
+                            <div style="height:30px;"></div>
+
+                            <div class="d-flex justify-content-center">
+                                <button id="btnLogin" type="button" class="btn btn-primary rounded-pill" style="width:100%;" onclick="Login()">Log In</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-4"></div>
+        </div>
+        <footer class="border-top footer text-muted d-flex align-items-center" style="height:10vh;">
+            <div class="container" style="text-align:center;">
+                &copy; 2023 - TaskManager.CoreMVC
+            </div>
+        </footer>
+    </div>
+</section>
+@section Scripts{
+    @{
+        <partial name="_ValidationScriptsPartial"></partial>
+    }
+    <script>
+        $(document).ready(function () {
+            $.validator.unobtrusive.parse($("#loginForm"));
+        });
+
+        // Login function
+        function Login() {
+            if ($("#loginForm").valid()) {
+                EnableLoginButton(false);
+                var data = $("#loginForm").serialize();
+                $.ajax({
+                    url: "/LogIn/LogIn",
+                    type: "POST",
+                    data: data,
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader("XSRF-TOKEN",
+                            $('input:hidden[name="__RequestVerificationToken"]').val());
+                    },
+                    success: function (response) {
+                        if (response.success == true) {
+                            toastr.success("Login Successful ! \n Redirecting...");
+                            setTimeout(function () {
+                                window.location = response.url;
+                            }, 1000);
+                        }
+                        else {
+                            toastr.error(response.errorMessage);
+                            EnableLoginButton(true);
+                        }
+                    },
+                    error: function (request, status, error) {
+                        toastr.error(request.responseText);
+                    }
+                });
+            }
+        }
+
+        // change Enable/disable state of Login button
+        function EnableLoginButton(value) {
+            var loginButton = document.getElementById("btnLogin");
+            if (value == true) {
+                loginButton.disabled = false;
+                loginButton.innerText = "Log In";
+            }
+            else {
+                loginButton.disabled = true;
+                loginButton.innerText = "Logging In...";
+            }
+        }
+
+        // Enter key listener for Employee Code Input field
+        var codeInput = document.getElementById("code");
+        codeInput.addEventListener("keydown", function (event) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                document.getElementById("btnLogin").click();
+            }
+        });
+
+        // Enter key lister for Password Input field
+        var pwdInput = document.getElementById("pwd");
+        pwdInput.addEventListener("keydown", function (event) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                document.getElementById("btnLogin").click();
+            }
+        });
+
+        // Show/Hide Password when Icon click
+        function ShowHidePassword() {
+            var passwordInput = document.getElementById("pwd");
+            if (passwordInput.type === "password") {
+                passwordInput.type = "text";
+                document.getElementById("eyeicon").innerHTML = "<i class='bi bi-eye-fill' > </i>";
+            } else {
+                passwordInput.type = "password";
+                document.getElementById("eyeicon").innerHTML = "<i class='bi bi-eye-slash-fill'></i>";
+            }
+        }
+    </script>
+}

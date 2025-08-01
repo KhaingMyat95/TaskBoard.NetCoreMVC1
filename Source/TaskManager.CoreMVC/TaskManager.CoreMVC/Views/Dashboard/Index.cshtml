@@ -1,0 +1,203 @@
+﻿@using TaskManager.CoreMVC.Enums
+@inject Microsoft.AspNetCore.Http.IHttpContextAccessor HttpContextAccessor
+@model IEnumerable<EmpTaskModel>
+
+@{
+    ViewData["Title"] = "Dashboard Page";
+    ViewData["Admin"] = @HttpContextAccessor.HttpContext.Session.GetString("Admin");
+
+}
+
+<partial name="_Notification" />
+<style>
+    #todolist .action-column {
+      text-align: center;
+    }
+
+    #todolist_filter{
+        display:flex;
+        justify-content: space-between;
+    }
+
+    #todolist_length{
+        float:left;
+        padding-bottom:5px;
+    }
+</style>
+<div class="container pt-2">
+    <div class="row">
+        <div class="col-6">
+            <h2 class="text-primary">To do List</h2>
+        </div>
+        <div class="col-6 text-end">
+        </div>
+    </div>
+
+    <table id="todolist" class="table table-striped">
+        <thead>
+            <tr>
+                <th style="width:200px;">
+                    Action
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.StatusString)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.TaskName)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.Remark)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.CancelReason)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.IsPrority)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.AssignDate)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.EstimatedEndDate)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.AssignEmployeeName)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.UpdateDate)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.UpdateEmployeeName)
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
+
+@section Scripts{
+    <script type="text/javascript">
+        var dashboardTable;
+        var EmpTaskStatus = {
+            Assign: 0,
+            Processing: 1,
+            Completed: 2,
+            Cancelled: 3
+        };
+
+        $(document).ready(function () {
+            var statusColor = ["primary", "success", "info", "secondary"];
+            var statusString = ["Assigned", "In Progress", "Completed", "Cancelled"];
+
+            dashboardTable = $('#todolist').DataTable({
+                "fnInitComplete": function (oSettings, json) {
+                    $('#todolist_filter').append('<button type="button" onclick="RefreshTable()" class="btn btn-secondary" style="width:100px;padding:2px"><i class="bi bi-arrow-clockwise"></i>Refresh</button>');
+                },
+                "processing": true,
+                "serverSide": true,
+                "searchable": true,
+                "ajax": {
+                    "url": "@Url.Action("GetMyTasks", "Dashboard")",
+                    "type": "POST"
+                },
+                "language": {
+                    "emptyTable": "No record found.",
+                    "processing":
+                        '<i class="fa fa-spinner fa-spin fa-3x fa-fw" style="color:#2a2b2b;"></i><span class="sr-only">Loading...</span> '
+                },
+                "autoWidth": true,
+                "columns": [
+                    {
+                        "data": "taskId",
+                        "width": '80px',
+                        "orderable": false,
+                        "className": "action-column",
+                        "render": function (data, type, row) {
+                            if (row.status < EmpTaskStatus.Cancelled)
+                            {
+                                return `<a onclick="ShowUpdateStatusDialog('${data}')" class="btn btn-info">
+                                    <i class="bi bi-pencil-fill"></i>
+                                    </a>`;
+                            }
+                            return '';
+                        }
+                    },
+                    {
+                        "data": "status",
+                        "searchable": true,
+                        "render": function (data) {
+                            return `<span class="badge bg-${statusColor[data]}">${statusString[data]}</span>`;
+                        }
+                    },
+                    {
+                        "data": "taskName",
+                        "searchable": true,
+                        "width": '200px'
+                    },
+                    {
+                        "data": "remark",
+                        "searchable": true,
+                        "width": '200px'
+                    },
+                    {
+                        "data": "cancelReason",
+                        "searchable": true,
+                        "width": '150px'
+                    },
+                    {
+                        "data": "isPrority",
+                        "searchable": true,
+                        "render": function (data) {
+                            if (data == true) {
+                                return '<span>Yes</span>'
+                            }
+                            else {
+                                return '<span>No </span>'
+                            }
+                        }
+                    },
+                    {
+                        "data": "assignDate",
+                        "searchable": true,
+                        "width": '120px'
+                    },
+                    { 
+                        "data": "estimatedEndDate",
+                        "searchable": true,
+                        "width": '120px'
+                    },
+                    { 
+                        "data": "assignEmployeeName",
+                        "searchable": true
+                    },
+                    { 
+                        "data": "updateDate",
+                        "searchable": true,
+                        "width": '120px'
+                    },
+                    { 
+                        "data": "updateEmployeeName",
+                        "searchable": true
+                    },
+                ],
+                "responsive": true,
+                "scrollX": true,
+                "scrollY": '60vh',
+                "scrollCollapse": true,
+                "error": function (xhr, error, thrown) {
+                    toastr.error("An error occurred while loading the data: " + error);
+                }
+            });
+        });
+
+        function RefreshTable() {
+            dashboardTable.ajax.reload();
+        }
+
+        function ShowUpdateStatusDialog(taskid) {
+            showInPopup('@Url.Action("UpdateStatus", "Dashboard", new { id = "__taskid__" }, Context.Request.Scheme)'.replace("__taskid__", taskid), 'Update Task Status');
+        }
+    </script>
+}
+
